@@ -1,51 +1,92 @@
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use priority_queue::PriorityQueue;
 use std::cmp::Reverse;
-enum LimitOrderType{
-    BID,
-    ASK,
+use std::hash::{Hash};
+
+#[derive(Copy, Clone)]
+pub enum LimitOrderType{
+    Bid,
+    Ask,
 }
-struct LimitOrder{
+#[derive(Copy, Clone)]
+pub struct LimitOrder{
     limit_order_type: LimitOrderType,
     price: u32,
     size: u32,
 }
-enum TradeResult{
-    SUCCESSFUL,
-    TRADE_OUT_OF_BOUNDS,
-    ORDER_ALREADY_EXISTS
+pub enum TradeResult{
+    Successful,
+    TradeOutOfBounds,
+    OrderAlreadyExists
 }
-enum CancelResult{
-    SUCCESSFUL,
-    TRADE_DOES_NOT_EXIST,
-    TRADE_IS_ALREADY_FILLED
+pub enum CancelResult{
+    Successful,
+    TradeDoesNotExist,
+    TradeIsAlreadyFilled
 }
-struct Trade{
-    user_id: int,
+#[derive(Copy, Clone)]
+pub struct Trade{
+    user_id: u32,
     user_order: LimitOrder,
-    order_number: i32,
+    order_number: u32,
 }
-struct Orderbook{
-    bid_pq: PriorityQueue<Trade, i32>,
-    ask_pq: PriorityQueue<Trade, Reverse<i32>>,
-    trade_ptr: HashMap<u64, &Trade>,
+impl Hash for Trade {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        let x: u64 = (self.user_id as u64) * (1<<32) + (self.order_number as u64);
+        x.hash(state)
+    }
+}
+impl Eq for Trade {}
+impl PartialEq for Trade {
+    fn eq(&self, other: &Self) -> bool {
+        self.user_id == other.user_id && self.order_number == other.order_number
+    }
+}
+
+pub struct Orderbook{
+    bid_pq: PriorityQueue<Trade, u32>,
+    ask_pq: PriorityQueue<Trade, Reverse<u32>>,
+    trade_ptr: HashMap<u64, Trade>,
 }
 impl Orderbook{
-    fn add_trade(&self, user_id : u32, user_order : LimitOrder, order_number : u32) -> TradeResult{
+    pub fn new() -> Orderbook {
+        let mut orderbook = Orderbook {
+            bid_pq: PriorityQueue::new(),
+            ask_pq: PriorityQueue::new(),
+            trade_ptr: HashMap::new(),
+        };
+        orderbook
+    }
+
+    pub fn add_trade(&mut self, user_id : u32, user_order : LimitOrder, order_number : u32) -> TradeResult{
+        // TODO: Add checks that may return TradeResult::TradeOutOfBounds and TradeResult::OrderAlreadyExists
         let c_trade = Trade {
             user_id,
             user_order,
             order_number
         };
-        trade_ptr.insert((user_order as u64) * (1<<32) + order_number, &c_trade);
-        if c_trade.user_order.limit_order_type = LimitOrderType::BID {
-            bid_pq.push(c_trade, c_trade.user_order.price);
+        let trade_hash: u64 = (user_id as u64) * (1<<32) + (c_trade.order_number as u64);
+        if self.trade_ptr.contains_key(&trade_hash) {
+            return TradeResult::OrderAlreadyExists;
         }
-        else{
-            ask_pq.push(c_trade, c_trade.user_order.price);
+        self.trade_ptr.insert(trade_hash, c_trade);
+        match c_trade.user_order.limit_order_type {
+            LimitOrderType::Bid => { self.bid_pq.push(c_trade, c_trade.user_order.price); },
+            LimitOrderType::Ask => { self.ask_pq.push(c_trade, Reverse(c_trade.user_order.price)); },
         }
+        TradeResult::Successful
     }
-    fn cancel_trade(&self, user_id : i32,  order_number : i32) -> CancelResult{
-
+    pub fn cancel_trade(&mut self, user_id : u32,  order_number : u32) -> CancelResult{
+        // Search for order hashmap to determine order type, search in corresponding priority queue, remove order? -Colin
+        let trade_hash: u64 = (user_id as u64) * (1<<32) + (order_number as u64);
+        if !self.trade_ptr.contains_key(&trade_hash){
+            return CancelResult::TradeDoesNotExist;
+        }
+        let trade: &Trade = self.trade_ptr.get(&trade_hash).unwrap();
+        // TODO: Change trade priority to highest in corresponding priority queue and pop trade
+        CancelResult::Successful
     }
 }
+
+
