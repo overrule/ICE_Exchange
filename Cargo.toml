@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 priority-queue = "1.2.3"
+md-5 = "0.10.5"
