@@ -15,7 +15,7 @@ pub struct LimitOrder{
     price: u32,
     size: u32,
 }
-pub enum TradeResult{
+pub enum OrderResult{
     Successful,
     TradeOutOfBounds,
     OrderAlreadyExists
@@ -24,6 +24,13 @@ pub enum CancelResult{
     Successful,
     TradeDoesNotExist,
     TradeIsAlreadyFilled
+}
+//user1.stock += size, user1.cash -= price
+struct TradeResult{
+    user1: u32,
+    user2: u32,
+    size: i32,
+    price: i64
 }
 #[derive(Copy, Clone)]
 pub struct Trade{
@@ -59,8 +66,8 @@ impl Orderbook{
         orderbook
     }
 
-    pub fn add_trade(&mut self, user_id : u32, user_order : LimitOrder, order_number : u32) -> TradeResult{
-        // TODO: Add checks that may return TradeResult::TradeOutOfBounds and TradeResult::OrderAlreadyExists
+    pub fn add_trade(&mut self, user_id : u32, user_order : LimitOrder, order_number : u32) -> OrderResult{
+        // TODO: Add checks that may return OrderResult::TradeOutOfBounds and OrderResult::OrderAlreadyExists
         let c_trade = Trade {
             user_id,
             user_order,
@@ -68,14 +75,14 @@ impl Orderbook{
         };
         let trade_hash: u64 = (user_id as u64) * (1<<32) + (c_trade.order_number as u64);
         if self.trade_ptr.contains_key(&trade_hash) {
-            return TradeResult::OrderAlreadyExists;
+            return OrderResult::OrderAlreadyExists;
         }
         self.trade_ptr.insert(trade_hash, c_trade);
         match c_trade.user_order.limit_order_type {
             LimitOrderType::Bid => { self.bid_pq.push(c_trade, c_trade.user_order.price); },
             LimitOrderType::Ask => { self.ask_pq.push(c_trade, Reverse(c_trade.user_order.price)); },
         }
-        TradeResult::Successful
+        OrderResult::Successful
     }
     pub fn cancel_trade(&mut self, user_id : u32,  order_number : u32) -> CancelResult{
         // Search for order hashmap to determine order type, search in corresponding priority queue, remove order? -Colin
