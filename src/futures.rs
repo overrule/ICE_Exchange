@@ -1,7 +1,6 @@
 use orderbook::Orderbook;
 use orderbook::TradeResult;
 use stock::Stock;
-use stock::MAX_USERS;
 struct Future{
     underlying_stock: Stock,
     orderbook: Orderbook,
