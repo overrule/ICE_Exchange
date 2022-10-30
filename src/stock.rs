@@ -1,6 +1,6 @@
 mod orderbook;
 use orderbook::Orderbook;
-const MAX_USERS: u32 = 65536;
+const MAX_USERS: u32 = 32;
 struct StockValue{
     underlying_handle: String,
 }
