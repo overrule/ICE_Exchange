@@ -1,5 +1,4 @@
-mod orderbook;
-use orderbook::Orderbook;
+use crate::orderbook::Orderbook;
 struct StockValue{
     underlying_handle: String,
 }
@@ -9,10 +8,10 @@ impl StockValue{
         0
     }
 }
-struct Stock{
-    // TODO: Considering switching to inheritance?
+pub struct Stock{
     orderbook: Orderbook,
     stock_value: StockValue,
-    ownership: [u32; crate::MAX_USERS]
+    instrument_id: i32,
+    holdings: [i32; crate::MAX_USERS]
 }
 

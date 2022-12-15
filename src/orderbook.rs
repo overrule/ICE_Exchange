@@ -1,5 +1,5 @@
+use crate::user::UserID;
 use std::collections::HashMap;
-use std::collections::hash_map::Entry;
 use priority_queue::PriorityQueue;
 use std::cmp::Reverse;
 use std::hash::{Hash};
@@ -26,11 +26,11 @@ pub enum CancelResult{
     TradeIsAlreadyFilled
 }
 //user1.stock += size, user1.cash -= price
-struct TradeResult{
-    user1: u32,
-    user2: u32,
-    size: i32,
-    price: i64
+pub struct TradeResult{
+    pub user1: UserID,
+    pub user2: UserID,
+    pub size: i32,
+    pub price: i64
 }
 #[derive(Copy, Clone)]
 pub struct Trade{
@@ -58,7 +58,7 @@ pub struct Orderbook{
 }
 impl Orderbook{
     pub fn new() -> Orderbook {
-        let mut orderbook = Orderbook {
+        let orderbook = Orderbook {
             bid_pq: PriorityQueue::new(),
             ask_pq: PriorityQueue::new(),
             trade_ptr: HashMap::new(),
