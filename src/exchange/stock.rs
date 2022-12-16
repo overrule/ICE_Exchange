@@ -1,4 +1,5 @@
 use crate::orderbook::Orderbook;
+use crate::user::UserID;
 struct StockValue{
     underlying_handle: String,
 }
@@ -14,4 +15,8 @@ pub struct Stock{
     instrument_id: i32,
     holdings: [i32; crate::MAX_USERS]
 }
-
+impl Stock{
+    pub fn change_holdings_by(&mut self, user: UserID, delta_stock: i32){
+        self.holdings[user.user_id] += delta_stock;
+    }
+}

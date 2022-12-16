@@ -12,3 +12,6 @@ pub struct StockOption{
     expiry_date: ContestDate,
     position: [i32; crate::MAX_USERS]
 }
+impl StockOption{
+    
+}

@@ -1,6 +1,9 @@
-use crate::stock::Stock;
-use crate::stock_future::StockFuture;
-use crate::stock_option::StockOption;
+mod stock;
+mod stock_option;
+mod stock_future;
+use stock::Stock;
+use stock_future::StockFuture;
+use stock_option::StockOption;
 enum Instrument{
     StockType(Stock),
     FutureType(StockFuture),
