@@ -36,21 +36,21 @@ pub struct TradeResult{
 }
 #[derive(Copy, Clone)]
 pub struct Trade{
-    user_id: UserID,
-    user_order: LimitOrder,
-    order_number: u32,
+    tradeID: TradeID,
+    user_order: LimitOrder
 }
 impl Hash for Trade {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        (self.user_id.user_id, self.order_number).hash(state)
+        self.tradeID.hash(state)
     }
 }
 impl Eq for Trade {}
 impl PartialEq for Trade {
     fn eq(&self, other: &Self) -> bool {
-        self.user_id.user_id == other.user_id.user_id && self.order_number == other.order_number
+        self.tradeID == other.tradeID
     }
 }
+#[derive(Copy, Clone)]
 struct TradeID{
     user_id: UserID,
     order_number: u32
@@ -66,11 +66,6 @@ impl Hash for TradeID {
         (self.user_id.user_id, self.order_number).hash(state)
     }
 }
-impl Trade{
-    pub fn get_trade_id(&self) -> TradeID{
-        TradeID{ user_id: self.user_id, order_number: self.order_number }
-    }
-}
 #[derive(Default)]
 pub struct Orderbook{
     bid_pq: PriorityQueue<Trade, u32>,
@@ -84,7 +79,7 @@ impl Orderbook{
     fn execute_trades<F : FnMut(TradeResult)> (&mut self, execute_trade: &mut F){
         while self.bid_pq.len() > 0 {
             let (best_bid, price) = self.bid_pq.peek_mut().unwrap();
-            *best_bid = self.trade_ptr.get(&best_bid.get_trade_id()).unwrap().clone();
+            *best_bid = self.trade_ptr.get(&best_bid.tradeID).unwrap().clone();
             if best_bid.user_order.cancelled == false {
                 break;
             }
@@ -92,7 +87,7 @@ impl Orderbook{
         }
         while self.ask_pq.len() > 0 {
             let (best_ask, price) = self.ask_pq.peek_mut().unwrap();
-            *best_ask = self.trade_ptr.get(&best_ask.get_trade_id()).unwrap().clone();
+            *best_ask = self.trade_ptr.get(&best_ask.tradeID).unwrap().clone();
             if best_ask.user_order.cancelled == false {
                 break;
             }
@@ -109,10 +104,10 @@ impl Orderbook{
         let mid_price = ((bid_price + ask_price) / 2) as i64;
         let trade_qty = min(best_bid.user_order.size - best_bid.user_order.filled, 
                                 best_ask.user_order.size - best_ask.user_order.filled);
-        let trade_result = TradeResult{user1: best_bid.user_id, user2: best_ask.user_id, price: mid_price, size: trade_qty};
+        let trade_result = TradeResult{user1: best_bid.tradeID.user_id, user2: best_ask.tradeID.user_id, price: mid_price, size: trade_qty};
         execute_trade(trade_result);
-        let update_bid = self.trade_ptr.get_mut(&best_bid.get_trade_id()).unwrap();
-        let update_ask = self.trade_ptr.get_mut(&best_ask.get_trade_id()).unwrap();
+        let update_bid = self.trade_ptr.get_mut(&best_bid.tradeID).unwrap();
+        let update_ask = self.trade_ptr.get_mut(&best_ask.tradeID).unwrap();
         update_ask.user_order.filled += trade_qty;
         update_bid.user_order.filled += trade_qty;
         if update_ask.user_order.filled < update_ask.user_order.size{
@@ -126,19 +121,17 @@ impl Orderbook{
     pub fn add_trade(&mut self, user_id : UserID, user_order : LimitOrder, order_number : u32) -> OrderResult{
         // TODO: Add checks that may return OrderResult::TradeOutOfBounds and OrderResult::OrderAlreadyExists
         let c_trade = Trade {
-            user_id,
-            user_order,
-            order_number
+            tradeID: TradeID{ user_id: user_id, order_number: order_number },
+            user_order: user_order
         };
-        if self.trade_ptr.contains_key(&c_trade.get_trade_id()) {
+        if self.trade_ptr.contains_key(&c_trade.tradeID) {
             return OrderResult::OrderAlreadyExists;
         }
-        self.trade_ptr.insert(c_trade.get_trade_id(), c_trade);
+        self.trade_ptr.insert(c_trade.tradeID, c_trade);
         match c_trade.user_order.limit_order_type {
             LimitOrderType::Bid => { self.bid_pq.push(c_trade, c_trade.user_order.price); },
             LimitOrderType::Ask => { self.ask_pq.push(c_trade, Reverse(c_trade.user_order.price)); },
         }
-
         OrderResult::Successful
     }
     pub fn cancel_trade(&mut self, user_id : UserID,  order_number : u32) -> CancelResult{
