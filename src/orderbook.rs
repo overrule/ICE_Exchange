@@ -50,16 +50,10 @@ impl PartialEq for Trade {
         self.tradeID == other.tradeID
     }
 }
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 struct TradeID{
     user_id: UserID,
     order_number: u32
-}
-impl Eq for TradeID {}
-impl PartialEq for TradeID {
-    fn eq(&self, other: &Self) -> bool {
-        self.user_id.user_id == other.user_id.user_id && self.order_number == other.order_number
-    }
 }
 impl Hash for TradeID {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {

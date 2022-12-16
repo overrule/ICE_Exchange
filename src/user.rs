@@ -3,7 +3,7 @@ pub struct User{
     pub handle_name: String,
     pub cash: i64
 }
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
 pub struct UserID{
     pub user_id: usize
 }
